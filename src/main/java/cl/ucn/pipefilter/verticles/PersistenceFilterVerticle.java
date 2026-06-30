@@ -16,8 +16,7 @@ public class PersistenceFilterVerticle extends AbstractVerticle {
     @Override
     public void start(Promise<Void> startPromise) {
 
-        // Este consumidor escucha las órdenes ya procesadas (pricing + fraude)
-        vertx.eventBus().consumer("DIRECCION", message -> {
+        vertx.eventBus().consumer("order.persist", message -> {
             JsonObject json = (JsonObject) message.body();
 
             vertx.executeBlocking(promise -> {
@@ -30,6 +29,7 @@ public class PersistenceFilterVerticle extends AbstractVerticle {
             }, res -> {
                 if (res.succeeded()) {
                     System.out.println("[PERSIST] Orden almacenada: " + json.getString("orderId"));
+                    vertx.eventBus().send("order.done", json);
                 } else {
                     System.err.println("[PERSIST] Error al almacenar orden: " + res.cause());
                 }
@@ -54,13 +54,11 @@ public class PersistenceFilterVerticle extends AbstractVerticle {
             order.setTotal(json.getLong("total"));
             order.setStatus(json.getString("status"));
 
-            // timestamp tipo String ISO → Instant
             String ts = json.getString("timestamp");
             if (ts != null) {
                 order.setTimestamp(Instant.parse(ts));
             }
 
-            // Items
             JsonArray itemsArray = json.getJsonArray("items");
             if (itemsArray != null) {
                 itemsArray.forEach(obj -> {
