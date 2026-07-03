@@ -1,181 +1,219 @@
-# Laboratorio III: Arquitectura Pipe & Filter <br> Profesor: Daniel San Martín <br> Patrones de Software y Programación.
+# Taller PSP - Pipeline de órdenes con Vert.x
+
+**Docente:** Daniel San Martin  
+**Curso:** Patrones de Software y Programación - Universidad Católica del Norte  
+**Repositorio:** https://github.com/NicoCG32/Taller3PSP
 
 
----
+## Descripción del proyecto
 
-## 🎯 Objetivo del Laboratorio
-Implementar un pipeline de procesamiento de órdenes de compra usando:
-- El patrón **Pipe & Filter**
-- **Vert.x** y su EventBus
-- Mensajes **JSON**
-- Persistencia en base de datos mediante **JPA/Hibernate**
+Implementación de un sistema de procesamiento de órdenes de compra basado en la arquitectura **Pipe & Filter**. El proyecto modela una tienda universitaria donde cada orden ingresa como un mensaje JSON, atraviesa una secuencia de filtros independientes y finalmente se almacena en una base de datos SQLite mediante JPA/Hibernate.
 
-El patrón Pipe & Filter es un estilo arquitectural donde una tarea compleja se divide en múltiples pasos independientes, llamados filtros, conectados entre sí mediante tuberías (pipes).
-
-🔹 ¿Qué es un filtro?
-
-- Un filtro es un componente que:
-
-        1. Recibe datos de entrada
-        2. Los transforma, valida o procesa
-        3. Produce datos de salida (o descarta)
-
-  Cada filtro realiza una tarea específica y autónoma.
-
-🔹 ¿Qué es un pipe?
-
-    Un pipe es el canal que conecta un filtro con el siguiente. 
-    Transmiten el resultado de un filtro como entrada del siguiente.
-
-- Permite:
-
-        1. Procesar datos en etapas
-        2. Aislar responsabilidades
-        3. Reusar filtros
-        4. Reemplazar filtros sin romper el sistema
-        5. Encadenar pasos fácilmente
-
-Cada etapa del pipeline será un **Verticle**, y cada enlace un **canal del EventBus**.
+El objetivo principal es demostrar programación reactiva y arquitectura orientada a mensajes usando **Vert.x**. Cada filtro se implementa como un `Verticle`, y la comunicación entre etapas ocurre mediante canales del `EventBus`.
 
 ---
 
-## 🛒 Contexto
-La universidad administra una tienda online paa vender productos institucionales tales como libros, poleras de clas carreras
-tazas con logo, etc. Cada compra genera un **JSON de orden**, pero estos datos pueden venir incompletos, con errores o con montos sospechosos.
+## Instrucciones del taller
 
-Su tarea es implementar un sistema modular basado en filtros encadenados.
+El enunciado y las reglas originales del laboratorio se encuentran en:
 
----
-
-## 🔧 Arquitectura Pipe & Filter
-
-OrderIngress → ValidationFilter → PricingFilter → FraudCheckFilter → PersistenceFilter
-
----
-
-## 📄 Formato JSON de Entrada
-
-``` json
-{
-    "orderId": "...",
-    "customerId": "...",
-    "items": [
-                { "productId": "...", 
-                  "quantity": 2, 
-                  "unitPrice": 15000 
-                }
-    ],
-    "couponCode": "DESCUENTO10",
-    "currency": "CLP",
-    "timestamp": "2025-11-20T12:34:56Z",
-    "paymentMethod": "CREDIT_CARD"
-}
+```text
+INSTRUCCIONES.md
 ```
----
-
-## ✔ Filtros a implementar
-
-## 🧩 Filtros del Pipeline (definidos de forma concreta)
 
 ---
 
-### ✅ 1. ValidationFilter (Filtro de Validación)
 
-**Entrada:** JSON desde `order.raw`  
-**Salida OK:** `order.validated`  
-**Salida error:** `order.error`
+## Arquitectura del sistema
 
-**Reglas:**
+El flujo principal del sistema es:
 
-1. **Campos obligatorios:**
-  - `orderId` (String, no vacío)
-  - `customerId` (String)
-  - `items` (array, no vacío)
-  - `currency` (String)
-  - `paymentMethod` (String)
-  - `timestamp` (String, formato ISO 8601)
+```text
+OrderIngress
+  -> ValidationFilter
+  -> PricingFilter
+  -> FraudCheckFilter
+  -> PersistenceFilter
+  -> OrderPrinter
+```
 
-2. **Reglas para cada item:**
-  - `productId` no vacío
-  - `quantity` entero **> 0**
-  - `unitPrice` entero **≥ 0**
+[Diagrama de Arquitectura](docs/diagrams/Arch.md)
 
-3. **Si alguna regla falla:**
-  - Se descarta.
+Cada etapa cumple una responsabilidad concreta:
 
-4. **Si pasa todas las validaciones:**
-  - Se envía el mismo JSON a `order.validated`.
+| Componente | Canal de entrada | Canal de salida | Responsabilidad |
+|---|---|---|---|
+| `OrderIngressVerticle` | - | `order.raw` | Genera una orden de ejemplo y la publica en el pipeline. |
+| `ValidationFilterVerticle` | `order.raw` | `order.validated` / `order.error` | Valida campos obligatorios, items y timestamp. |
+| `PricingFilterVerticle` | `order.validated` | `order.priced` | Calcula subtotal, descuento, total y estado inicial. |
+| `FraudCheckFilterVerticle` | `order.priced` | `order.persist` | Marca órdenes sospechosas para revisión. |
+| `PersistenceFilterVerticle` | `order.persist` | `order.done` | Persiste la orden y sus items mediante JPA/Hibernate. |
+| `OrderPrinterVerticle` | `order.done` | - | Muestra por consola el estado de la base de datos. |
 
----
-
-### ✅ 2. PricingFilter (Filtro de Precios y Totales)
-
-**Entrada:** JSON desde `order.validated`  
-**Salida:** `order.priced`
-
-**Reglas:**
-
-1. **Cálculo del subtotal:**
-  - `subtotal = Σ (quantity * unitPrice)` para todos los ítems.
-
-2. **Descuentos según cupón:**
-  - `DESCUENTO10` → 10% del subtotal
-  - `DESCUENTO20` → 20% si el subtotal ≥ 50.000
-  - Otro caso: descuento = 0
-
-3. **Cálculo del total:**
-  - `total = subtotal - discount`
-
-4. **Agregar/modificar campos en el JSON:**
-  - `subtotal`
-  - `discount`
-  - `total`
-  - `status = "CALCULADA"`
-
-5. **Enviar el JSON a `order.priced`.**
+Esta separacion permite estudiar el patron Pipe & Filter en un contexto reactivo: los filtros no se invocan directamente entre si, sino que se desacoplan mediante mensajes publicados en el EventBus.
 
 ---
 
-### ✅ 3. FraudCheckFilter (Filtro de Fraude / Revisión)
+## Reglas principales del pipeline
 
-**Entrada:** JSON desde `order.priced`  
-**Salida:** `order.persist`
+### Validación
 
-**Reglas:**
+Una orden válida debe incluir:
 
-1. **Monto alto con tarjeta de crédito:**
-  - Si `total > 200000` **y** `paymentMethod = "TARJETA_CREDITO"`  
-    → marcar orden como sospechosa (`status = "REVISION"`)
+- `orderId`
+- `customerId`
+- `items`
+- `currency`
+- `paymentMethod`
+- `timestamp` en formato ISO 8601
 
-2. **Demasiados productos:**
-  - Si `items.length > 20`  
-    → `status = "REVISION"`
+Cada item debe tener `productId`, `quantity > 0` y `unitPrice >= 0`.
 
-3. **Si no hay señales de fraude:**
-  - Mantener `status = "CALCULADA"`
+### Cálculo de precios
 
-4. **En todos los casos:**
-  - Enviar el JSON resultante a `order.persist`.
+El filtro de precios calcula:
+
+```text
+subtotal = sum(quantity * unitPrice)
+total = subtotal - discount
+```
+
+Los cupones implementados son:
+
+| Cupón | Regla |
+|---|---|
+| `DESCUENTO10` | 10% del subtotal. |
+| `DESCUENTO20` | 20% solo si el subtotal es mayor o igual a 50.000. |
+
+### Revisión de fraude
+
+Una orden queda en estado `REVISION` si:
+
+- `total > 200000` y el método de pago es `TARJETA_CREDITO` o `CREDIT_CARD`
+- contiene más de 20 items.
+
+Si no se detectan señales de fraude, mantiene el estado `CALCULADA`.
+
+---
+
+## Persistencia
+
+La persistencia se realiza con:
+
+- **JPA / Hibernate**
+- **SQLite**
+- entidades `Order` y `OrderItem`
+
+El archivo de base de datos utilizado por defecto es:
+
+```text
+ordenes.db
+```
 
 ---
 
-## 🗄 Entidades JPA
+## Compilación y ejecución
 
-### Order
-- orderId
-- customerId
-- timestamp
-- currency
-- paymentMethod
-- subtotal
-- discount
-- total
-- status
+Para compilar el proyecto:
 
-### OrderItem
-- id
-- productId
-- quantity
-- unitPrice
+```bash
+mvn clean compile
+```
+
+Para ejecutar las pruebas:
+
+```bash
+mvn test
+```
+
+Para ejecutar la aplicación:
+
+```bash
+mvn exec:java "-Dexec.mainClass=cl.ucn.pipefilter.main.MainVerticle"
+```
+
+En PowerShell es importante mantener entre comillas el argumento `-Dexec.mainClass`.
 
 ---
+
+## Pruebas
+
+El proyecto incluye pruebas unitarias con **JUnit 4** y pruebas arquitecturales con **ArchUnit**.
+
+Aunque el enunciado del taller no solicitaba pruebas, se agregaron para aprovechar la instancia del curso y aplicar de forma integrada los contenidos vistos durante el semestre. Este tercer taller se concentra principalmente en programación reactiva con Vert.x, pero se mantuvieron pruebas básicas porque complementan la entrega y permiten verificar algunos criterios de diseño.
+
+Las pruebas unitarias verifican:
+
+- comportamiento básico de las entidades JPA.
+
+Las pruebas arquitecturales verifican:
+
+- que los filtros sean `Verticle`
+- que el modelo no dependa de la ejecución reactiva
+- que los filtros no se comuniquen mediante dependencias directas entre clases.
+
+---
+
+## Documentación técnica con Doxygen
+
+El proyecto incluye una configuración inicial de Doxygen en:
+
+```text
+docs/doxygen/Doxyfile
+```
+
+**por implementar** en detalle. Falta agregar comentarios JavaDoc en las clases y métodos principales.
+
+Para generar la documentación técnica:
+
+```bash
+doxygen docs/doxygen/Doxyfile
+```
+
+La documentación HTML se genera en:
+
+```text
+docs/doxygen/generated/html/index.html
+```
+
+En PowerShell puede abrirse con:
+
+```powershell
+Start-Process .\docs\doxygen\generated\html\index.html
+```
+
+Es necesario tener Doxygen instalado y disponible en el `PATH` del sistema.
+
+---
+
+## Estructura de carpetas
+
+```text
+Taller3PSP/
+├── docs/
+│   └── doxygen/
+│       └── Doxyfile
+├── src/
+│   ├── main/
+│   │   ├── java/
+│   │   │   └── cl/ucn/pipefilter/
+│   │   │       ├── config/
+│   │   │       ├── main/
+│   │   │       ├── model/
+│   │   │       └── verticles/
+│   │   └── resources/
+│   │       └── META-INF/
+│   └── test/
+│       └── java/
+│           └── cl/ucn/pipefilter/
+│               ├── architecture/
+│               └── model/
+├── INSTRUCCIONES.md
+├── ordenes.db
+├── pom.xml
+└── README.md
+```
+
+---
+
+_Proyecto académico - enfoque en programación reactiva, arquitectura Pipe & Filter y sistemas orientados a mensajes._

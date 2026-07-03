@@ -1,0 +1,32 @@
+DOXYFILE_ENCODING      = UTF-8
+PROJECT_NAME           = "Taller3PSP - Pipeline de ordenes con Vert.x"
+PROJECT_BRIEF          = "Arquitectura Pipe & Filter orientada a mensajes con Vert.x, JSON y JPA/Hibernate"
+OUTPUT_LANGUAGE        = Spanish
+
+OUTPUT_DIRECTORY       = docs/doxygen/generated
+GENERATE_HTML          = YES
+HTML_OUTPUT            = html
+GENERATE_LATEX         = NO
+GENERATE_XML           = NO
+GENERATE_TREEVIEW      = YES
+
+INPUT                  = README.md INSTRUCCIONES.md src/main/java
+USE_MDFILE_AS_MAINPAGE = README.md
+RECURSIVE              = YES
+FILE_PATTERNS          = *.java *.md
+EXCLUDE_PATTERNS       = */target/* */docs/doxygen/generated/*
+
+OPTIMIZE_OUTPUT_JAVA   = YES
+JAVADOC_AUTOBRIEF      = YES
+EXTRACT_ALL            = YES
+EXTRACT_PRIVATE        = NO
+EXTRACT_PACKAGE        = YES
+EXTRACT_STATIC         = YES
+
+WARNINGS               = YES
+WARN_IF_UNDOCUMENTED   = NO
+SOURCE_BROWSER         = YES
+INLINE_SOURCES         = NO
+REFERENCES_RELATION    = YES
+REFERENCED_BY_RELATION = YES
+HAVE_DOT               = NO
