@@ -110,6 +110,14 @@ El archivo de base de datos utilizado por defecto es:
 ordenes.db
 ```
 
+La orden de demostracion generada por `OrderIngressVerticle` usa un identificador incremental con prefijo `ORD-DEMO-`. Esto permite ejecutar la aplicacion varias veces sobre la misma base sin chocar con una orden persistida previamente.
+
+La limpieza de la base es voluntaria. Si se desea resetear manualmente las ordenes almacenadas, puede ejecutarse desde la raiz del proyecto:
+
+```bash
+sqlite3 ordenes.db "DELETE FROM order_items; DELETE FROM orders;"
+```
+
 ---
 
 ## Compilación y ejecución
@@ -162,7 +170,7 @@ El proyecto incluye una configuración inicial de Doxygen en:
 docs/doxygen/Doxyfile
 ```
 
-**por implementar** en detalle. Falta agregar comentarios JavaDoc en las clases y métodos principales.
+La documentacion tecnica ya cuenta con JavaDoc inicial en los verticles principales implementados para el pipeline.
 
 Para generar la documentación técnica:
 
@@ -191,6 +199,8 @@ Es necesario tener Doxygen instalado y disponible en el `PATH` del sistema.
 ```text
 Taller3PSP/
 ├── docs/
+│   ├── diagrams/
+│   │   └── Arch.md
 │   └── doxygen/
 │       └── Doxyfile
 ├── src/

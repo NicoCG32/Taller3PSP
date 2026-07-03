@@ -5,8 +5,27 @@ import io.vertx.core.json.JsonArray;
 import io.vertx.core.json.JsonObject;
 import java.time.format.DateTimeFormatter;
 
+/**
+ * Filtro encargado de validar ordenes recibidas como JSON.
+ *
+ * PRECONDICIONES:
+ * - Debe existir un mensaje JSON publicado en el canal {@code order.raw}.
+ *
+ * POSCONDICIONES:
+ * - Las ordenes validas son publicadas en {@code order.validated}.
+ * - Las ordenes invalidas son publicadas en {@code order.error}.
+ */
 public class ValidationFilterVerticle extends AbstractVerticle {
 
+    /**
+     * Registra el consumidor del canal de entrada del filtro de validacion.
+     *
+     * PRECONDICIONES:
+     * - El verticle debe estar desplegado dentro de una instancia de Vert.x.
+     *
+     * POSCONDICIONES:
+     * - El filtro queda escuchando mensajes desde {@code order.raw}.
+     */
     @Override
     public void start() {
         vertx.eventBus().consumer("order.raw", message -> {
@@ -21,8 +40,22 @@ public class ValidationFilterVerticle extends AbstractVerticle {
                 vertx.eventBus().send("order.error", order);
             }
         });
+
+        System.out.println("[ValidationFilter] Filtro activo. Escuchando canal order.raw.");
     }
 
+    /**
+     * Verifica que una orden cumpla las reglas minimas del taller.
+     *
+     * PRECONDICIONES:
+     * - {@code order} debe representar una orden recibida desde el EventBus.
+     *
+     * POSCONDICIONES:
+     * - No modifica el JSON recibido.
+     *
+     * @param order orden en formato JSON que sera validada.
+     * @return {@code true} si la orden contiene campos obligatorios, timestamp valido e items correctos; {@code false} en caso contrario.
+     */
     private boolean isValid(JsonObject order) {
         try {
 

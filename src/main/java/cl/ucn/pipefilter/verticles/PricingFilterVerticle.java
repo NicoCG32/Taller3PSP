@@ -4,8 +4,30 @@ import io.vertx.core.AbstractVerticle;
 import io.vertx.core.json.JsonArray;
 import io.vertx.core.json.JsonObject;
 
+/**
+ * Filtro encargado de calcular subtotal, descuento y total de una orden.
+ *
+ * PRECONDICIONES:
+ * - La orden debe haber sido validada previamente.
+ * - El mensaje debe llegar por el canal {@code order.validated}.
+ *
+ * POSCONDICIONES:
+ * - Agrega los campos {@code subtotal}, {@code discount}, {@code total} y {@code status}.
+ * - Publica la orden calculada en {@code order.priced}.
+ */
 public class PricingFilterVerticle extends AbstractVerticle {
 
+    /**
+     * Registra el consumidor del canal de precios y aplica las reglas de descuentos.
+     *
+     * PRECONDICIONES:
+     * - El JSON recibido debe contener un arreglo {@code items}.
+     * - Cada item debe tener {@code quantity} y {@code unitPrice}.
+     *
+     * POSCONDICIONES:
+     * - La orden queda marcada con estado {@code CALCULADA}.
+     * - La orden se envia al canal {@code order.priced}.
+     */
     @Override
     public void start() {
         vertx.eventBus().consumer("order.validated", message -> {
@@ -43,5 +65,7 @@ public class PricingFilterVerticle extends AbstractVerticle {
 
             vertx.eventBus().send("order.priced", order);
         });
+
+        System.out.println("[PricingFilter] Filtro activo. Escuchando canal order.validated.");
     }
 }

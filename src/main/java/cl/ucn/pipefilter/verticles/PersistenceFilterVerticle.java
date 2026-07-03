@@ -11,8 +11,31 @@ import jakarta.persistence.EntityManager;
 
 import java.time.Instant;
 
+/**
+ * Filtro encargado de persistir ordenes procesadas en la base de datos.
+ *
+ * PRECONDICIONES:
+ * - La orden debe haber pasado por validacion, calculo de precios y revision de fraude.
+ * - El mensaje debe llegar por el canal {@code order.persist}.
+ *
+ * POSCONDICIONES:
+ * - La orden y sus items quedan almacenados mediante JPA/Hibernate.
+ * - Si la persistencia es exitosa, se publica el mensaje en {@code order.done}.
+ */
 public class PersistenceFilterVerticle extends AbstractVerticle {
 
+    /**
+     * Registra el consumidor de persistencia y ejecuta el acceso a base de datos como tarea bloqueante.
+     *
+     * PRECONDICIONES:
+     * - Debe existir una unidad de persistencia JPA llamada {@code ordersPU}.
+     * - El verticle debe desplegarse preferentemente como worker.
+     *
+     * POSCONDICIONES:
+     * - El verticle queda escuchando el canal {@code order.persist}.
+     *
+     * @param startPromise promesa utilizada por Vert.x para completar el despliegue del verticle.
+     */
     @Override
     public void start(Promise<Void> startPromise) {
 
@@ -35,6 +58,8 @@ public class PersistenceFilterVerticle extends AbstractVerticle {
                 }
             });
         });
+
+        System.out.println("[PersistenceFilter] Filtro activo. Escuchando canal order.persist.");
         startPromise.complete();
     }
 

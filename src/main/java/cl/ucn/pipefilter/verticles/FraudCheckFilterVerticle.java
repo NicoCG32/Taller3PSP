@@ -4,8 +4,29 @@ import io.vertx.core.AbstractVerticle;
 import io.vertx.core.json.JsonArray;
 import io.vertx.core.json.JsonObject;
 
+/**
+ * Filtro encargado de aplicar reglas simples de revision por posible fraude.
+ *
+ * PRECONDICIONES:
+ * - La orden debe haber pasado por el filtro de precios.
+ * - El mensaje debe llegar por el canal {@code order.priced}.
+ *
+ * POSCONDICIONES:
+ * - Mantiene el estado {@code CALCULADA} si no hay senales de riesgo.
+ * - Cambia el estado a {@code REVISION} si se detecta una regla sospechosa.
+ * - Publica la orden en {@code order.persist}.
+ */
 public class FraudCheckFilterVerticle extends AbstractVerticle {
 
+    /**
+     * Registra el consumidor del canal de fraude y evalua las reglas de revision.
+     *
+     * PRECONDICIONES:
+     * - El JSON recibido debe contener {@code total}, {@code paymentMethod} e {@code items}.
+     *
+     * POSCONDICIONES:
+     * - La orden queda lista para persistencia en {@code order.persist}.
+     */
     @Override
     public void start() {
         vertx.eventBus().consumer("order.priced", message -> {
@@ -36,5 +57,7 @@ public class FraudCheckFilterVerticle extends AbstractVerticle {
 
             vertx.eventBus().send("order.persist", order);
         });
+
+        System.out.println("[FraudCheckFilter] Filtro activo. Escuchando canal order.priced.");
     }
 }
