@@ -48,5 +48,3 @@ flowchart LR
 
     Printer -->|"Consulta e imprime"| DB
 ```
-
-El modelo C4 de componentes en Structurizr DSL se encuentra en [`C4.txt`](../../C4.txt).

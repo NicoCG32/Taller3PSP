@@ -1,0 +1,61 @@
+name: Tests and Coverage
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  coverage:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+          cache: maven
+
+      - name: Run tests and generate coverage
+        run: mvn clean test
+
+      - name: Summarize coverage
+        shell: bash
+        run: |
+          python - <<'PY' >> "$GITHUB_STEP_SUMMARY"
+          import csv
+          from pathlib import Path
+
+          report = Path("target/site/jacoco/jacoco.csv")
+          rows = list(csv.DictReader(report.open(newline="", encoding="utf-8")))
+
+          totals = {
+              "instruction_missed": sum(int(row["INSTRUCTION_MISSED"]) for row in rows),
+              "instruction_covered": sum(int(row["INSTRUCTION_COVERED"]) for row in rows),
+              "branch_missed": sum(int(row["BRANCH_MISSED"]) for row in rows),
+              "branch_covered": sum(int(row["BRANCH_COVERED"]) for row in rows),
+              "line_missed": sum(int(row["LINE_MISSED"]) for row in rows),
+              "line_covered": sum(int(row["LINE_COVERED"]) for row in rows),
+          }
+
+          def percent(covered, missed):
+              total = covered + missed
+              return "n/a" if total == 0 else f"{covered * 100 / total:.2f}%"
+
+          print("## Coverage summary")
+          print()
+          print("| Metric | Coverage |")
+          print("| --- | ---: |")
+          print(f"| Instructions | {percent(totals['instruction_covered'], totals['instruction_missed'])} |")
+          print(f"| Branches | {percent(totals['branch_covered'], totals['branch_missed'])} |")
+          print(f"| Lines | {percent(totals['line_covered'], totals['line_missed'])} |")
+          PY
+
+      - name: Upload JaCoCo HTML report
+        uses: actions/upload-artifact@v4
+        with:
+          name: jacoco-html-report
+          path: target/site/jacoco/

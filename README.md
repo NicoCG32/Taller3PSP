@@ -1,5 +1,12 @@
 # Taller PSP - Pipeline de órdenes con Vert.x
 
+[![Tests and Coverage](https://github.com/NicoCG32/Taller3PSP/actions/workflows/coverage.yml/badge.svg)](https://github.com/NicoCG32/Taller3PSP/actions/workflows/coverage.yml)
+![Line Coverage](https://img.shields.io/badge/line%20coverage-57.03%25-yellowgreen)
+
+**Integrantes:** 
+- Pablo Guzmán
+- Rodrigo Cortés
+
 **Docente:** Daniel San Martin  
 **Curso:** Patrones de Software y Programación - Universidad Católica del Norte  
 **Repositorio:** https://github.com/NicoCG32/Taller3PSP
@@ -150,9 +157,12 @@ El proyecto incluye pruebas unitarias con **JUnit 4** y pruebas arquitecturales 
 
 Aunque el enunciado del taller no solicitaba pruebas, se agregaron para aprovechar la instancia del curso y aplicar de forma integrada los contenidos vistos durante el semestre. Este tercer taller se concentra principalmente en programación reactiva con Vert.x, pero se mantuvieron pruebas básicas porque complementan la entrega y permiten verificar algunos criterios de diseño.
 
+Posteriormente, una vez evaluado el taller, se aprovechó este mismo proyecto para probar medición de cobertura de pruebas, tema que también forma parte del estudio de calidad de software del curso. Para ello se incorporó **JaCoCo** y un flujo de **GitHub Actions** que ejecuta las pruebas, genera el reporte de cobertura y exige un mínimo de 50% de cobertura de líneas.
+
 Las pruebas unitarias verifican:
 
 - comportamiento básico de las entidades JPA.
+- comportamiento aislado de filtros del pipeline mediante mensajes del EventBus de Vert.x.
 
 Las pruebas arquitecturales verifican:
 
