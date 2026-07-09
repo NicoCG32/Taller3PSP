@@ -10,6 +10,7 @@ import io.vertx.core.json.JsonObject;
 import jakarta.persistence.EntityManager;
 
 import java.time.Instant;
+import java.util.function.Supplier;
 
 /**
  * Filtro encargado de persistir ordenes procesadas en la base de datos.
@@ -23,6 +24,16 @@ import java.time.Instant;
  * - Si la persistencia es exitosa, se publica el mensaje en {@code order.done}.
  */
 public class PersistenceFilterVerticle extends AbstractVerticle {
+
+    private final Supplier<EntityManager> entityManagerProvider;
+
+    public PersistenceFilterVerticle() {
+        this(JPAUtil::getEntityManager);
+    }
+
+    PersistenceFilterVerticle(Supplier<EntityManager> entityManagerProvider) {
+        this.entityManagerProvider = entityManagerProvider;
+    }
 
     /**
      * Registra el consumidor de persistencia y ejecuta el acceso a base de datos como tarea bloqueante.
@@ -65,7 +76,7 @@ public class PersistenceFilterVerticle extends AbstractVerticle {
 
     private void persistOrder(JsonObject json) {
 
-        EntityManager em = JPAUtil.getEntityManager();
+        EntityManager em = entityManagerProvider.get();
         try {
             em.getTransaction().begin();
 

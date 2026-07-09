@@ -9,8 +9,10 @@ import java.util.List;
 public class OrderPrinter {
 
     public static void printAllOrders() {
-        EntityManager em = JPAUtil.getEntityManager();
+        printAllOrders(JPAUtil.getEntityManager());
+    }
 
+    static void printAllOrders(EntityManager em) {
         try {
             em.getTransaction().begin();
 
