@@ -1,7 +1,7 @@
 # Taller PSP - Pipeline de órdenes con Vert.x
 
 [![Tests and Coverage](https://github.com/NicoCG32/Taller3PSP/actions/workflows/coverage.yml/badge.svg)](https://github.com/NicoCG32/Taller3PSP/actions/workflows/coverage.yml)
-![Line Coverage](https://img.shields.io/badge/line%20coverage-83.96%25-brightgreen)
+![Line Coverage](https://img.shields.io/badge/line%20coverage-100%25-brightgreen)
 
 **Integrantes:** 
 - Pablo Guzmán
@@ -157,7 +157,7 @@ El proyecto incluye pruebas unitarias con **JUnit 4** y pruebas arquitecturales 
 
 Aunque el enunciado del taller no solicitaba pruebas, se agregaron para aprovechar la instancia del curso y aplicar de forma integrada los contenidos vistos durante el semestre. Este tercer taller se concentra principalmente en programación reactiva con Vert.x, pero se mantuvieron pruebas básicas porque complementan la entrega y permiten verificar algunos criterios de diseño.
 
-Posteriormente, una vez evaluado el taller, se aprovechó este mismo proyecto para probar medición de cobertura de pruebas, tema que también forma parte del estudio de calidad de software del curso. Para ello se incorporó **JaCoCo** y un flujo de **GitHub Actions** que ejecuta las pruebas, genera el reporte de cobertura y exige un mínimo de 80% de cobertura de líneas.
+Posteriormente, una vez evaluado el taller, se aprovechó este mismo proyecto para probar medición de cobertura de pruebas, tema que también forma parte del estudio de calidad de software del curso. Para ello se incorporó **JaCoCo** y un flujo de **GitHub Actions** que ejecuta las pruebas, genera el reporte de cobertura y exige 100% de cobertura de líneas. Este umbral se refiere específicamente a líneas ejecutables; no implica 100% de cobertura de ramas ni demuestra por sí solo la ausencia de defectos.
 
 Las pruebas unitarias verifican:
 

@@ -8,13 +8,23 @@ import jakarta.persistence.EntityTransaction;
 import org.junit.Test;
 import org.mockito.ArgumentCaptor;
 
+import java.io.ByteArrayOutputStream;
+import java.io.PrintStream;
+
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertSame;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.timeout;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 public class PersistenceFilterVerticleTest extends VerticleTestBase {
+
+    @Test
+    public void constructorPorDefectoCreaElFiltro() {
+        assertSame(PersistenceFilterVerticle.class, new PersistenceFilterVerticle().getClass());
+    }
 
     @Test
     public void convierteYPersisteUnaOrdenConSusItems() throws InterruptedException {
@@ -43,6 +53,29 @@ public class PersistenceFilterVerticleTest extends VerticleTestBase {
         assertEquals(2, guardada.getItems().size());
         assertEquals("PROD-A", guardada.getItems().get(0).getProductId());
         assertSame(guardada, guardada.getItems().get(0).getOrder());
+    }
+
+    @Test
+    public void revierteLaTransaccionCuandoLaPersistenciaFalla() throws InterruptedException {
+        EntityManager entityManager = mock(EntityManager.class);
+        EntityTransaction transaction = mock(EntityTransaction.class);
+        when(entityManager.getTransaction()).thenReturn(transaction);
+        when(transaction.isActive()).thenReturn(true);
+        org.mockito.Mockito.doThrow(new IllegalStateException("persistencia fallida"))
+                .when(entityManager).persist(org.mockito.ArgumentMatchers.any(Order.class));
+        desplegar(new PersistenceFilterVerticle(() -> entityManager));
+
+        PrintStream errorOriginal = System.err;
+        try {
+            System.setErr(new PrintStream(new ByteArrayOutputStream()));
+            vertx.eventBus().send("order.persist", ordenCompleta());
+
+            verify(transaction, timeout(5000)).rollback();
+            verify(entityManager, timeout(5000)).close();
+            verify(transaction, never()).commit();
+        } finally {
+            System.setErr(errorOriginal);
+        }
     }
 
     private JsonObject ordenCompleta() {

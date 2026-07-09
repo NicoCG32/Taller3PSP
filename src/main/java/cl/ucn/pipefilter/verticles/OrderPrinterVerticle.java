@@ -14,6 +14,16 @@ import io.vertx.core.AbstractVerticle;
  */
 public class OrderPrinterVerticle extends AbstractVerticle {
 
+    private final Runnable printOrders;
+
+    public OrderPrinterVerticle() {
+        this(OrderPrinter::printAllOrders);
+    }
+
+    OrderPrinterVerticle(Runnable printOrders) {
+        this.printOrders = printOrders;
+    }
+
     /**
      * Registra el consumidor que reacciona al fin del procesamiento.
      *
@@ -27,7 +37,7 @@ public class OrderPrinterVerticle extends AbstractVerticle {
     public void start() {
         vertx.eventBus().consumer("order.done", message -> {
             System.out.println("[Printer] 🖨️ ¡Proceso completado! Mostrando el estado de la base de datos...");
-            OrderPrinter.printAllOrders();
+            printOrders.run();
         });
 
         System.out.println("[Printer] Verticle activo. Escuchando canal order.done.");

@@ -13,12 +13,18 @@ import java.nio.charset.StandardCharsets;
 import java.time.Instant;
 import java.util.List;
 
+import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 public class OrderPrinterTest {
+
+    @Test
+    public void permiteCrearLaUtilidadDeImpresion() {
+        assertNotNull(new OrderPrinter());
+    }
 
     @Test
     public void imprimeLasOrdenesObtenidasDesdeElEntityManager() {
@@ -45,6 +51,27 @@ public class OrderPrinterTest {
         assertTrue(texto.contains("PROD-MOCK"));
         verify(transaction).begin();
         verify(transaction).commit();
+        verify(entityManager).close();
+    }
+
+    @Test
+    public void revierteLaTransaccionCuandoLaConsultaFalla() {
+        EntityManager entityManager = mock(EntityManager.class);
+        EntityTransaction transaction = mock(EntityTransaction.class);
+        when(entityManager.getTransaction()).thenReturn(transaction);
+        when(transaction.isActive()).thenReturn(true);
+        when(entityManager.createQuery("SELECT o FROM Order o", Order.class))
+                .thenThrow(new IllegalStateException("consulta fallida"));
+
+        PrintStream errorOriginal = System.err;
+        try {
+            System.setErr(new PrintStream(new ByteArrayOutputStream()));
+            OrderPrinter.printAllOrders(entityManager);
+        } finally {
+            System.setErr(errorOriginal);
+        }
+
+        verify(transaction).rollback();
         verify(entityManager).close();
     }
 
